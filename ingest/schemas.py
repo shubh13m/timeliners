@@ -55,3 +55,31 @@ class StoryEventsOut(BaseModel):
 
 class EventsResponse(BaseModel):
     stories: list[StoryEventsOut]
+
+
+class DuplicatePair(BaseModel):
+    """One merge suggestion from the post-ingest curator."""
+    keep_slug: str
+    drop_slug: str
+    confidence: float = Field(ge=0.0, le=1.0)
+    reason: str = ""
+
+    @field_validator("keep_slug", "drop_slug")
+    @classmethod
+    def _non_empty(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("empty slug")
+        return v
+
+
+class MisplacedEvent(BaseModel):
+    """A timeline event the curator believes doesn't belong on its story."""
+    story_slug: str
+    event_headline: str
+    reason: str = ""
+
+
+class CuratorResponse(BaseModel):
+    duplicates: list[DuplicatePair] = []
+    misplaced_events: list[MisplacedEvent] = []

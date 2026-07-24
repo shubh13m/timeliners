@@ -146,6 +146,14 @@ def run_backfill(start: date, end: date, dry_run: bool = False) -> int:
             time.sleep(2)
 
     if not dry_run:
+        # Run curator ONCE at the very end of a backfill (not per day) so it
+        # sees the full accumulated set of new stories and can merge cross-day
+        # duplicates in a single pass.
+        try:
+            from . import curator
+            curator.run_curator(settings, gemini=gemini, dry_run=False)
+        except Exception as e:  # pragma: no cover
+            log.warning("backfill_curator_failed", error=str(e))
         lifecycle.sweep_inactive(settings)
 
     log.info(

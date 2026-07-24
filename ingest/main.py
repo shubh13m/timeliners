@@ -10,7 +10,7 @@ from datetime import date
 import structlog
 
 from . import cluster as cluster_mod
-from . import dedup, lifecycle, matcher, persist, push, rss
+from . import curator, dedup, lifecycle, matcher, persist, push, rss
 from .config import load_settings
 from .gemini import CircuitBreakerOpen, GeminiClient
 from .schemas import EventsResponse
@@ -234,6 +234,14 @@ def run(dry_run: bool = False) -> int:
         )
     except CircuitBreakerOpen:
         return 2
+
+    # Post-ingest AI curator: dedupe stragglers the deterministic matcher missed,
+    # flag misplaced timeline events. Best-effort — errors here don't fail the run.
+    if not dry_run:
+        try:
+            curator.run_curator(settings, gemini=gemini, dry_run=False)
+        except Exception as e:  # pragma: no cover
+            log.warning("curator_stage_failed", error=str(e))
 
     lifecycle.sweep_inactive(settings)
 
