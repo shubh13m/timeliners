@@ -48,7 +48,17 @@ export default function HomeClient({ stories }: { stories: Story[] }) {
     if (effectiveDate) {
       list = list.filter((s) => s.event_dates?.includes(effectiveDate));
     }
-    return list;
+    // Sort by the story's most recent timeline event (event_dates is stored
+    // in descending order, so event_dates[0] is the latest activity). This
+    // beats trending_score, which just counts total events and can float
+    // stale-but-large stories to the top.
+    return [...list].sort((a, b) => {
+      const av = a.event_dates?.[0] ?? a.last_updated ?? "";
+      const bv = b.event_dates?.[0] ?? b.last_updated ?? "";
+      if (av !== bv) return bv.localeCompare(av);
+      // Tiebreaker: bigger timelines first (more established stories).
+      return (b.trending_score || 0) - (a.trending_score || 0);
+    });
   }, [stories, cat, effectiveDate]);
 
   const dateLabel = effectiveDate === todayKey ? "today" : effectiveDate;

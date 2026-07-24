@@ -8,11 +8,15 @@ export const dynamic = "force-static";
 
 async function fetchStories(): Promise<Story[]> {
   const sb = supabaseBuild();
+  // NOTE: we don't order server-side by trending_score/last_updated because
+  // that biases which 100 stories we pick. `last_updated` is set to ingest
+  // run time (unreliable for backfilled rows), and trending_score = total
+  // event count (rewards stale-but-large stories). Instead, pull the freshest
+  // 100 by creation, then let the client sort by latest event date.
   const { data, error } = await sb
     .from("stories")
     .select("*")
     .eq("is_active", true)
-    .order("trending_score", { ascending: false })
     .order("last_updated", { ascending: false })
     .limit(100);
   if (error) {

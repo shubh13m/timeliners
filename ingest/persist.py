@@ -177,8 +177,28 @@ def upsert_daily_digest(
 
 
 def refresh_trending_score(story_id: str) -> None:
-    """trending_score = events_last_24h * distinct_sources_last_24h."""
+    """trending_score = events_last_24h * distinct_sources_last_24h.
+
+    Also refreshes ``stories.last_updated`` to the newest event_timestamp on
+    this story. Setting it to ingest wall-clock (as the initial upsert does)
+    made backfilled stories rank as if they were freshly reported, which broke
+    the home feed's chronological sort.
+    """
     client = get_client()
+    # Refresh last_updated from the newest event_timestamp.
+    latest = (
+        client.table("timeline_events")
+        .select("event_timestamp")
+        .eq("story_id", story_id)
+        .order("event_timestamp", desc=True)
+        .limit(1)
+        .execute()
+    )
+    if latest.data:
+        client.table("stories").update(
+            {"last_updated": latest.data[0]["event_timestamp"]}
+        ).eq("id", story_id).execute()
+
     # Fetch recent events; compute in Python (avoids RPC dependency).
     res = (
         client.table("timeline_events")
