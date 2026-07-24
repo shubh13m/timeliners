@@ -1,15 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { CATEGORIES, Category } from "@/lib/types";
+import { useSearchParams } from "next/navigation";
+import type { Category } from "@/lib/types";
 
-type Props = { active: Category };
+type Props = { active: Category; categories: Category[] };
 
-export default function CategoryTabs({ active }: Props) {
+export default function CategoryTabs({ active, categories }: Props) {
+  const sp = useSearchParams();
+  const date = sp.get("date");
+  if (categories.length <= 1) return null; // no filter needed
+
   return (
     <nav className="flex gap-1 overflow-x-auto no-scrollbar py-2">
-      {CATEGORIES.map((cat) => {
-        const href = cat === "All" ? "/" : `/?cat=${encodeURIComponent(cat)}`;
+      {categories.map((cat) => {
+        const params = new URLSearchParams();
+        if (cat !== "All") params.set("cat", cat);
+        if (date) params.set("date", date);
+        const qs = params.toString();
+        const href = qs ? `/?${qs}` : "/";
         const on = active === cat;
         return (
           <Link

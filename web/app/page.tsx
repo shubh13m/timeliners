@@ -19,7 +19,31 @@ async function fetchStories(): Promise<Story[]> {
     console.error("fetch stories failed", error);
     return [];
   }
-  return data as Story[];
+  const stories = data as Story[];
+  if (stories.length === 0) return stories;
+
+  // Attach the distinct set of YYYY-MM-DD dates each story has events on,
+  // so the client-side date filter can match stories by any timeline event.
+  const ids = stories.map((s) => s.id);
+  const { data: events, error: evErr } = await sb
+    .from("timeline_events")
+    .select("story_id,event_timestamp")
+    .in("story_id", ids);
+  if (evErr) {
+    console.error("fetch story event dates failed", evErr);
+    return stories;
+  }
+  const byStory = new Map<string, Set<string>>();
+  for (const e of events as { story_id: string; event_timestamp: string }[]) {
+    const day = (e.event_timestamp || "").slice(0, 10);
+    if (!day) continue;
+    if (!byStory.has(e.story_id)) byStory.set(e.story_id, new Set());
+    byStory.get(e.story_id)!.add(day);
+  }
+  return stories.map((s) => ({
+    ...s,
+    event_dates: Array.from(byStory.get(s.id) ?? []).sort().reverse(),
+  }));
 }
 
 export default async function HomePage() {

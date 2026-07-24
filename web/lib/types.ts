@@ -9,6 +9,8 @@ export type Story = {
   first_seen_at: string;
   last_updated: string;
   created_at: string;
+  /** Distinct YYYY-MM-DD dates that this story has timeline events on. */
+  event_dates?: string[];
 };
 
 export type TimelineEvent = {
@@ -37,15 +39,20 @@ export type DailyDigest = {
 
 export type StoryWithEvents = Story & { events: TimelineEvent[] };
 
-export const CATEGORIES = [
+// Categories are derived dynamically from actual stories at runtime;
+// this list is only used as a stable order hint when rendering tabs.
+export const CATEGORY_ORDER = [
   "All",
   "India Top News",
   "Politics",
   "Business",
   "Sports",
+  "Tech",
   "Technology",
   "World",
   "Entertainment",
+  "Science",
+  "Health",
 ] as const;
 
-export type Category = (typeof CATEGORIES)[number];
+export type Category = string;

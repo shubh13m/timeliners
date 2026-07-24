@@ -22,6 +22,7 @@ function labelFor(d: Date, today: Date): string {
 export default function DateCarousel({ days = 30 }: { days?: number }) {
   const sp = useSearchParams();
   const activeDate = sp.get("date");
+  const cat = sp.get("cat");
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -30,6 +31,14 @@ export default function DateCarousel({ days = 30 }: { days?: number }) {
     d.setDate(today.getDate() - i);
     return d;
   });
+
+  const hrefFor = (key: string) => {
+    const params = new URLSearchParams();
+    if (cat) params.set("cat", cat);
+    if (key !== formatDate(today)) params.set("date", key);
+    const qs = params.toString();
+    return qs ? `/?${qs}` : "/";
+  };
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-black/70 backdrop-blur">
@@ -40,7 +49,7 @@ export default function DateCarousel({ days = 30 }: { days?: number }) {
           return (
             <Link
               key={key}
-              href={key === formatDate(today) ? "/" : `/?date=${key}`}
+              href={hrefFor(key)}
               className={`shrink-0 rounded-lg px-3 py-1.5 text-xs transition ${
                 on
                   ? "bg-blue-500 text-white"
