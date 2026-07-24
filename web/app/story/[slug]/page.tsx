@@ -89,12 +89,9 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
         <span className="rounded bg-white/5 px-2 py-0.5">{story.category}</span>
         <span>{events.length} events</span>
       </div>
-      <h1 className="mb-3 text-2xl font-bold text-white sm:text-3xl">
+      <h1 className="mb-6 text-2xl font-bold text-white sm:text-3xl">
         {story.title}
       </h1>
-      {story.summary && (
-        <p className="mb-6 text-gray-300">{story.summary}</p>
-      )}
       <TimelinePanel events={events} />
     </div>
   );

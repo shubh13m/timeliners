@@ -3,13 +3,6 @@
 import Link from "next/link";
 import type { Story } from "@/lib/types";
 
-function readTime(text?: string | null): string {
-  if (!text) return "1 min";
-  const words = text.split(/\s+/).length;
-  const mins = Math.max(1, Math.round(words / 200));
-  return `${mins} min read`;
-}
-
 function timeAgo(iso: string): string {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
   if (s < 60) return `${s}s ago`;
@@ -21,6 +14,7 @@ function timeAgo(iso: string): string {
 type Props = { story: Story; active?: boolean };
 
 export default function StoryCard({ story, active }: Props) {
+  const eventCount = Math.max(1, story.trending_score || 1);
   return (
     <Link
       href={`/story/${story.slug}/`}
@@ -32,15 +26,14 @@ export default function StoryCard({ story, active }: Props) {
         <span className="rounded bg-white/5 px-2 py-0.5">{story.category}</span>
         <span>{timeAgo(story.last_updated)}</span>
       </div>
-      <h3 className="mb-2 text-base font-semibold text-white line-clamp-2">
+      <h3 className="text-base font-semibold leading-snug text-white line-clamp-3">
         {story.title}
       </h3>
-      {story.summary && (
-        <p className="mb-3 text-sm text-gray-300 line-clamp-2">{story.summary}</p>
-      )}
-      <div className="flex items-center justify-between text-xs text-gray-500">
-        <span>{readTime(story.summary)}</span>
-        {story.trending_score > 1 && (
+      <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
+        <span>
+          {eventCount} event{eventCount === 1 ? "" : "s"}
+        </span>
+        {story.trending_score > 2 && (
           <span className="text-orange-400">🔥 trending</span>
         )}
       </div>

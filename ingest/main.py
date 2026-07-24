@@ -34,15 +34,27 @@ log = structlog.get_logger("ingest")
 
 def _build_events_prompt(clusters_with_context: list[dict]) -> str:
     return (
-        "You are a structured news analyst. For each story below, extract ONLY NEW "
-        "chronological events that are not already in the existing timeline.\n\n"
+        "You are a structured news analyst building a chronological TIMELINE for each story.\n"
+        "For each story below, extract ONLY NEW chronological events not already in existing_timeline.\n\n"
+        "RULES:\n"
+        "1. Break the story into 2-4 DISTINCT events when the articles contain enough substance "
+        "(e.g. an announcement + a reaction + a follow-up = 3 events). If only one significant "
+        "development is reported, return exactly one event.\n"
+        "2. The event `headline` must describe WHAT HAPPENED with specifics (an action, decision, "
+        "statement, outcome). Do NOT restate or paraphrase the story title.\n"
+        "3. `details` must be 2-3 complete sentences with concrete facts: who, when, where, "
+        "numbers, direct quotes if present. Never restate the headline. Never say 'this event' "
+        "or 'the story'. Write it like a wire-service dispatch.\n"
+        "4. `event_timestamp` = the article's published time (ISO 8601, with timezone).\n"
+        "5. Set `event_type` to the best-fit label.\n"
+        "6. Drop events with confidence < 0.6.\n\n"
         "Return STRICT JSON:\n"
-        '{"stories":[{"cluster_index":int,"updated_summary":"...",'
+        '{"stories":[{"cluster_index":int,"updated_summary":"one-sentence neutral overview",'
         '"new_events":[{"event_timestamp":"ISO8601","headline":"...","details":"...",'
         '"event_type":"announcement|verdict|statement|update|correction",'
         '"source_index":int,"confidence":0.0-1.0}]}]}\n\n'
-        "If no new events, return an empty new_events list.\n"
-        "source_index is the index into that cluster\'s articles.\n\n"
+        "If a cluster has no new events, return an empty new_events list for it.\n"
+        "`source_index` is the index into that cluster's articles.\n\n"
         f"Input:\n{json.dumps(clusters_with_context, indent=2, default=str)}\n"
     )
 
