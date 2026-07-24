@@ -6,10 +6,15 @@ on:
     paths:
       - 'web/**'
       - '.github/workflows/deploy-web.yml'
+  workflow_run:
+    workflows: ["Ingest news"]
+    types: [completed]
   workflow_dispatch:
 
 jobs:
   deploy:
+    # Skip re-deploy if the triggering ingest run failed
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -40,6 +45,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          NEXT_PUBLIC_SITE_URL: ${{ vars.SITE_URL || 'https://timeliner.pages.dev' }}
         run: pnpm build
 
       - name: Deploy to Cloudflare Pages
