@@ -57,22 +57,60 @@ def load_settings() -> Settings:
     )
 
 
-# RSS sources (Indian national + regional top news).
+# RSS sources — Google News India, one endpoint per topic.
+# All feeds are free, unauthenticated, English, India edition.
+_GN_BASE = "https://news.google.com/rss"
+_GN_TOPIC = f"{_GN_BASE}/headlines/section/topic"
+_GN_SUFFIX = "hl=en-IN&gl=IN&ceid=IN:en"
+
 RSS_SOURCES: list[dict[str, str]] = [
     {
-        "name": "Google News India",
-        "url": "https://news.google.com/rss?hl=en-IN&gl=IN&ceid=IN:en",
+        "name": "Google News India — Top",
+        "url": f"{_GN_BASE}?{_GN_SUFFIX}",
         "credibility": "0.7",
+        "category_hint": "India Top News",
     },
     {
-        "name": "PIB India",
-        "url": "https://pib.gov.in/RssMain.aspx?ModId=6&Lang=1&Regid=3",
-        "credibility": "1.0",
+        "name": "Google News India — World",
+        "url": f"{_GN_TOPIC}/WORLD?{_GN_SUFFIX}",
+        "credibility": "0.7",
+        "category_hint": "World",
     },
     {
-        "name": "The Hindu - National",
-        "url": "https://www.thehindu.com/news/national/feeder/default.rss",
-        "credibility": "0.9",
+        "name": "Google News India — Business",
+        "url": f"{_GN_TOPIC}/BUSINESS?{_GN_SUFFIX}",
+        "credibility": "0.7",
+        "category_hint": "Business",
+    },
+    {
+        "name": "Google News India — Technology",
+        "url": f"{_GN_TOPIC}/TECHNOLOGY?{_GN_SUFFIX}",
+        "credibility": "0.7",
+        "category_hint": "Technology",
+    },
+    {
+        "name": "Google News India — Sports",
+        "url": f"{_GN_TOPIC}/SPORTS?{_GN_SUFFIX}",
+        "credibility": "0.7",
+        "category_hint": "Sports",
+    },
+    {
+        "name": "Google News India — Entertainment",
+        "url": f"{_GN_TOPIC}/ENTERTAINMENT?{_GN_SUFFIX}",
+        "credibility": "0.7",
+        "category_hint": "Entertainment",
+    },
+    {
+        "name": "Google News India — Science",
+        "url": f"{_GN_TOPIC}/SCIENCE?{_GN_SUFFIX}",
+        "credibility": "0.7",
+        "category_hint": "Technology",
+    },
+    {
+        "name": "Google News India — Health",
+        "url": f"{_GN_TOPIC}/HEALTH?{_GN_SUFFIX}",
+        "credibility": "0.7",
+        "category_hint": "India Top News",
     },
 ]
 
