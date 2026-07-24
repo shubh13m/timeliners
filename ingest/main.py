@@ -59,27 +59,26 @@ def _build_events_prompt(clusters_with_context: list[dict]) -> str:
     )
 
 
-def run(dry_run: bool = False) -> int:
-    settings = load_settings()
-    log.info("run_start", dry_run=dry_run, model=settings.gemini_model)
+def process_articles(
+    articles: list, settings, gemini: GeminiClient, dry_run: bool = False
+) -> tuple[int, int]:
+    """Cluster → match → dedup → generate events → persist.
 
-    # Phase 1: fetch
-    articles = rss.fetch_all(settings)
+    Returns (stories_updated, events_inserted).
+    Extracted from run() so backfill can reuse the same pipeline.
+    """
     if not articles:
-        log.warning("no_articles_exiting")
-        return 0
-
-    gemini = GeminiClient(settings)
+        return 0, 0
 
     # Phase 2: cluster
     try:
         clusters = cluster_mod.cluster_articles(articles, settings, gemini)
     except CircuitBreakerOpen as e:
         log.error("circuit_breaker_open", stage="cluster", error=str(e))
-        return 2
+        raise
     if not clusters:
-        log.info("no_clusters_exiting")
-        return 0
+        log.info("no_clusters")
+        return 0, 0
 
     # Phases 3+4: match existing stories, filter dedup, build prompt input
     prompt_input: list[dict] = []
@@ -128,8 +127,7 @@ def run(dry_run: bool = False) -> int:
 
     if not prompt_input:
         log.info("nothing_new_after_dedup")
-        lifecycle.sweep_inactive(settings)
-        return 0
+        return 0, 0
 
     # Phase 5: batched Gemini call for events
     prompt = _build_events_prompt(prompt_input)
@@ -137,23 +135,18 @@ def run(dry_run: bool = False) -> int:
         events_resp: EventsResponse = gemini.generate_json(
             prompt, EventsResponse, phase="events"
         )
-    except CircuitBreakerOpen as e:
-        log.error("circuit_breaker_open", stage="events", error=str(e))
-        return 2
+    except CircuitBreakerOpen:
+        raise
     except Exception as e:
         log.error("events_call_failed", error=str(e))
-        return 1
+        return 0, 0
 
-    # Phases 6+7+8: persist, sweep, notify
+    # Phases 6+7: persist + intra-run dedup
     total_events = 0
-    stories_updated: list[tuple[str, str, str, str]] = []  # (story_id, title, slug, first_headline)
+    stories_updated: list[tuple[str, str, str, str]] = []
     resp_by_idx = {s.cluster_index: s for s in events_resp.stories}
-
-    # Intra-run dedup: after we persist a *new* story (no prior story_id),
-    # remember its title so subsequent new clusters in the same run can be
-    # merged into it via keyword overlap instead of creating a duplicate.
-    persisted_new: list[tuple[str, str]] = []  # (story_id, title)
-    from .normalize import keyword_overlap  # local import to avoid cycles
+    persisted_new: list[tuple[str, str]] = []
+    from .normalize import keyword_overlap
 
     for state in per_cluster_state:
         idx = state["cluster_index"]
@@ -162,8 +155,6 @@ def run(dry_run: bool = False) -> int:
             continue
         cluster = state["cluster"]
 
-        # If this cluster has no DB match, check against clusters we just
-        # persisted in THIS run — same-event / different-framing duplicates.
         if not state["story_id"]:
             for existing_id, existing_title in persisted_new:
                 if keyword_overlap(cluster.title, existing_title) >= 0.5:
@@ -201,7 +192,6 @@ def run(dry_run: bool = False) -> int:
                 story_id, s_out.updated_summary or cluster.title, display_order=idx
             )
             persist.refresh_trending_score(story_id)
-            # Fetch slug from DB (existing stories keep their slug).
             slug_res = (
                 persist.get_client().table("stories").select("slug,title")
                 .eq("id", story_id).limit(1).execute()
@@ -215,16 +205,37 @@ def run(dry_run: bool = False) -> int:
             if was_new:
                 persisted_new.append((story_id, db_title))
 
-    lifecycle.sweep_inactive(settings)
-
     if not dry_run:
         for story_id, title, slug, headline in stories_updated:
             push.notify_story_update(settings, story_id, title, slug, headline)
 
+    return len(stories_updated), total_events
+
+
+def run(dry_run: bool = False) -> int:
+    settings = load_settings()
+    log.info("run_start", dry_run=dry_run, model=settings.gemini_model)
+
+    articles = rss.fetch_all(settings)
+    if not articles:
+        log.warning("no_articles_exiting")
+        return 0
+
+    gemini = GeminiClient(settings)
+
+    try:
+        stories_updated, events_inserted = process_articles(
+            articles, settings, gemini, dry_run=dry_run
+        )
+    except CircuitBreakerOpen:
+        return 2
+
+    lifecycle.sweep_inactive(settings)
+
     log.info(
         "run_complete",
-        stories_updated=len(stories_updated),
-        events_inserted=total_events,
+        stories_updated=stories_updated,
+        events_inserted=events_inserted,
     )
     return 0
 
