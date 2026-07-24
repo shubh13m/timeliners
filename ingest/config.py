@@ -50,7 +50,7 @@ def load_settings() -> Settings:
         vapid_public_key=os.getenv("VAPID_PUBLIC_KEY", ""),
         vapid_private_key=os.getenv("VAPID_PRIVATE_KEY", ""),
         vapid_subject=os.getenv("VAPID_SUBJECT", "mailto:admin@example.com"),
-        max_stories_per_run=_int("INGEST_MAX_STORIES_PER_RUN", 10),
+        max_stories_per_run=_int("INGEST_MAX_STORIES_PER_RUN", 6),
         inactive_days=_int("INGEST_INACTIVE_DAYS", 14),
         archive_days=_int("INGEST_ARCHIVE_DAYS", 90),
         cache_dir=_REPO_ROOT / "ingest" / ".cache",
@@ -121,7 +121,7 @@ GEMINI_MIN_INTERVAL_S: float = 5.0
 GEMINI_MAX_CONSECUTIVE_FAILURES: int = 3
 
 # Confidence threshold to keep a cluster.
-CLUSTER_CONFIDENCE_THRESHOLD: float = 0.6
+CLUSTER_CONFIDENCE_THRESHOLD: float = 0.7
 
 # Story matching threshold (pg_trgm similarity).
 STORY_SIMILARITY_THRESHOLD: float = 0.4

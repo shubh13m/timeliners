@@ -149,12 +149,33 @@ def run(dry_run: bool = False) -> int:
     stories_updated: list[tuple[str, str, str, str]] = []  # (story_id, title, slug, first_headline)
     resp_by_idx = {s.cluster_index: s for s in events_resp.stories}
 
+    # Intra-run dedup: after we persist a *new* story (no prior story_id),
+    # remember its title so subsequent new clusters in the same run can be
+    # merged into it via keyword overlap instead of creating a duplicate.
+    persisted_new: list[tuple[str, str]] = []  # (story_id, title)
+    from .normalize import keyword_overlap  # local import to avoid cycles
+
     for state in per_cluster_state:
         idx = state["cluster_index"]
         s_out = resp_by_idx.get(idx)
         if not s_out or not s_out.new_events:
             continue
         cluster = state["cluster"]
+
+        # If this cluster has no DB match, check against clusters we just
+        # persisted in THIS run — same-event / different-framing duplicates.
+        if not state["story_id"]:
+            for existing_id, existing_title in persisted_new:
+                if keyword_overlap(cluster.title, existing_title) >= 0.5:
+                    log.info(
+                        "intra_run_merge",
+                        cluster_index=idx,
+                        title=cluster.title[:80],
+                        merged_into=existing_title[:80],
+                    )
+                    state["story_id"] = existing_id
+                    break
+
         first_seen = date.today()
         slug = persist.make_slug(cluster.title, first_seen)
         if dry_run:
@@ -165,6 +186,7 @@ def run(dry_run: bool = False) -> int:
                 events=len(s_out.new_events),
             )
             continue
+        was_new = state["story_id"] is None
         story_id = persist.upsert_story(
             story_id=state["story_id"],
             title=cluster.title,
@@ -185,14 +207,13 @@ def run(dry_run: bool = False) -> int:
                 .eq("id", story_id).limit(1).execute()
             )
             row = (slug_res.data or [{}])[0]
+            db_title = row.get("title") or cluster.title
+            db_slug = row.get("slug") or slug
             stories_updated.append(
-                (
-                    story_id,
-                    row.get("title") or cluster.title,
-                    row.get("slug") or slug,
-                    s_out.new_events[0].headline,
-                )
+                (story_id, db_title, db_slug, s_out.new_events[0].headline)
             )
+            if was_new:
+                persisted_new.append((story_id, db_title))
 
     lifecycle.sweep_inactive(settings)
 

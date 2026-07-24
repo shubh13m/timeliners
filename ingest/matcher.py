@@ -14,10 +14,10 @@ from .normalize import keyword_overlap, keywords, normalize_title
 log = structlog.get_logger(__name__)
 
 # Keyword-overlap threshold for the fallback matcher.
-# 0.5 = half of the smaller keyword set must overlap. Empirically catches
+# 0.45 = ~half of the smaller keyword set must overlap. Empirically catches
 # same-story different-source titles that trigram similarity misses,
 # while avoiding false positives.
-KEYWORD_MATCH_THRESHOLD: float = 0.5
+KEYWORD_MATCH_THRESHOLD: float = 0.45
 MIN_KEYWORDS: int = 3
 FALLBACK_LOOKBACK_DAYS: int = 14
 FALLBACK_LIMIT: int = 500
