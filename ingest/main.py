@@ -178,12 +178,17 @@ def process_articles(
             )
             continue
         was_new = state["story_id"] is None
+        earliest = None
+        articles_for_state = state.get("new_articles") or []
+        if articles_for_state:
+            earliest = min(a.published_at for a in articles_for_state if a.published_at)
         story_id = persist.upsert_story(
             story_id=state["story_id"],
             title=cluster.title,
             category=cluster.category,
             summary=s_out.updated_summary or "",
             was_inactive=state["was_inactive"],
+            first_seen_ts=earliest,
         )
         inserted = persist.insert_events(story_id, s_out.new_events, state["new_articles"])
         if inserted:

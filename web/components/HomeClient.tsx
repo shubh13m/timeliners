@@ -9,7 +9,30 @@ import { CATEGORY_ORDER, type Category, type Story } from "@/lib/types";
 export default function HomeClient({ stories }: { stories: Story[] }) {
   const sp = useSearchParams();
   const cat = (sp.get("cat") as Category) || "All";
-  const date = sp.get("date"); // YYYY-MM-DD or null
+  const dateParam = sp.get("date"); // explicit YYYY-MM-DD
+  const showAll = sp.get("all") === "1";
+
+  // Default: the most recent date that actually has events (usually today
+  // during normal cron ingest; falls back to the latest backfill day when
+  // no fresh ingest has run yet). Users opt in to "All dates" to see history.
+  const latestEventDate = useMemo(() => {
+    let latest = "";
+    for (const s of stories) {
+      for (const d of s.event_dates ?? []) {
+        if (d > latest) latest = d;
+      }
+    }
+    return latest || null;
+  }, [stories]);
+  const effectiveDate = showAll ? null : dateParam || latestEventDate;
+
+  const todayKey = useMemo(() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }, []);
 
   // Categories that actually exist in the current story set (+ "All").
   const categories = useMemo<Category[]>(() => {
@@ -22,28 +45,35 @@ export default function HomeClient({ stories }: { stories: Story[] }) {
   const filtered = useMemo(() => {
     let list = stories;
     if (cat !== "All") list = list.filter((s) => s.category === cat);
-    if (date) list = list.filter((s) => s.event_dates?.includes(date));
+    if (effectiveDate) {
+      list = list.filter((s) => s.event_dates?.includes(effectiveDate));
+    }
     return list;
-  }, [stories, cat, date]);
+  }, [stories, cat, effectiveDate]);
+
+  const dateLabel = effectiveDate === todayKey ? "today" : effectiveDate;
 
   return (
     <>
       <CategoryTabs active={cat} categories={categories} />
-      {date && (
+      {effectiveDate && (
         <div className="mt-2 flex items-center gap-2 text-sm text-gray-400">
-          <span>Showing stories with updates on <span className="text-gray-200">{date}</span></span>
-          <a
-            href={cat === "All" ? "/" : `/?cat=${encodeURIComponent(cat)}`}
-            className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-gray-300 hover:bg-white/10"
-          >
-            Clear date
-          </a>
+          <span>
+            Showing stories with updates on{" "}
+            <span className="text-gray-200">{dateLabel}</span>
+          </span>
         </div>
       )}
-      <div className="mt-4">
+      <div className="mt-4 pb-20">
         {filtered.length === 0 ? (
           <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-8 text-center text-sm text-gray-400">
-            No stories match this filter.
+            No stories on this date.{" "}
+            <a
+              href={cat === "All" ? "/?all=1" : `/?cat=${encodeURIComponent(cat)}&all=1`}
+              className="text-blue-400 hover:underline"
+            >
+              See all dates →
+            </a>
           </div>
         ) : (
           <Feed stories={filtered} />

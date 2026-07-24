@@ -1,5 +1,5 @@
-// Timeliner service worker — offline shell + web push
-const CACHE = "timeliner-v1";
+// Timelined service worker — offline shell + web push
+const CACHE = "timelined-v1";
 const SHELL = ["/", "/manifest.webmanifest", "/favicon.ico", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (event) => {
@@ -39,7 +39,7 @@ self.addEventListener("fetch", (event) => {
 
 // Push handler
 self.addEventListener("push", (event) => {
-  let data = { title: "Timeliner", body: "New story update", url: "/" };
+  let data = { title: "Timelined", body: "New story update", url: "/" };
   try {
     if (event.data) data = { ...data, ...event.data.json() };
   } catch (e) { /* ignore */ }

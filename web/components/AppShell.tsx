@@ -17,7 +17,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-20 border-b border-white/10 bg-black/60 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
           <Link href="/" className="text-lg font-bold tracking-tight text-white">
-            <span className="text-blue-400">T</span>imeliner
+            <span className="text-blue-400">T</span>imelined
           </Link>
           <div className="flex-1">
             <Suspense fallback={<div className="h-9" />}>
@@ -35,7 +35,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </header>
       <main className="flex-1 pb-20">{children}</main>
       <footer className="border-t border-white/10 py-4 text-center text-xs text-gray-500">
-        Timeliner · Auto-generated from Indian news sources
+        Timelined · Auto-generated from Indian news sources
       </footer>
     </div>
   );

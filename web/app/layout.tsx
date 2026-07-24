@@ -12,12 +12,12 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://timelined.pages.de
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Timeliner — Indian News as Interactive Timelines",
-    template: "%s · Timeliner",
+    default: "Timelined — Indian News as Interactive Timelines",
+    template: "%s · Timelined",
   },
   description:
     "Top Indian news transformed into chronological, interactive story timelines. Auto-updated 3× daily.",
-  applicationName: "Timeliner",
+  applicationName: "Timelined",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: "/favicon.ico",
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    siteName: "Timeliner",
+    siteName: "Timelined",
     images: ["/og-default.png"],
   },
   twitter: { card: "summary_large_image", images: ["/og-default.png"] },

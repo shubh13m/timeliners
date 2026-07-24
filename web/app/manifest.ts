@@ -4,8 +4,8 @@ export const dynamic = "force-static";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Timeliner",
-    short_name: "Timeliner",
+    name: "Timelined",
+    short_name: "Timelined",
     description: "Indian news as interactive timelines",
     start_url: "/",
     display: "standalone",

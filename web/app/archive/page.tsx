@@ -6,7 +6,7 @@ export const dynamic = "force-static";
 
 export const metadata = {
   title: "Archive",
-  description: "All past stories from Timeliner, active and inactive.",
+  description: "All past stories from Timelined, active and inactive.",
 };
 
 async function fetchAll(): Promise<Story[]> {

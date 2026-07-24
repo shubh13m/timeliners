@@ -43,7 +43,7 @@ export async function GET(): Promise<Response> {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
-    <title>Timeliner</title>
+    <title>Timelined</title>
     <link>${SITE_URL}/</link>
     <description>Indian news as interactive timelines</description>
     <language>en-in</language>

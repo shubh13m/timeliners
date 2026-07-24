@@ -17,10 +17,10 @@ export function newsArticleJsonLd(story: Story, events: TimelineEvent[]) {
       "@type": "WebPage",
       "@id": `${SITE_URL}/story/${story.slug}/`,
     },
-    author: { "@type": "Organization", name: "Timeliner" },
+    author: { "@type": "Organization", name: "Timelined" },
     publisher: {
       "@type": "Organization",
-      name: "Timeliner",
+      name: "Timelined",
       logo: { "@type": "ImageObject", url: `${SITE_URL}/icon-512.png` },
     },
     image: [`${SITE_URL}/og-default.png`],
@@ -31,7 +31,7 @@ export function siteJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "Timeliner",
+    name: "Timelined",
     url: SITE_URL,
     potentialAction: {
       "@type": "SearchAction",

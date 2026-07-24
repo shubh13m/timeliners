@@ -4,7 +4,7 @@ from __future__ import annotations
 import hashlib
 import re
 import uuid
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import structlog
 
@@ -38,10 +38,17 @@ def upsert_story(
     category: str,
     summary: str,
     was_inactive: bool = False,
+    first_seen_ts: datetime | None = None,
 ) -> str:
-    """Create or update a story. Returns the story_id."""
+    """Create or update a story. Returns the story_id.
+
+    ``first_seen_ts`` is used for new stories only. Pass the earliest article
+    (or event) timestamp so backfilled historical stories are anchored to the
+    date they actually broke instead of the ingest wall-clock.
+    """
     client = get_client()
-    now = datetime.now(timezone.utc).isoformat()
+    now_dt = datetime.now(timezone.utc)
+    now = now_dt.isoformat()
     today = date.today()
 
     if story_id:
@@ -56,8 +63,12 @@ def upsert_story(
             log.info("story_revived", story_id=story_id, title=title[:80])
         return story_id
 
-    new_id = deterministic_story_id(title, today)
-    slug = make_slug(title, today)
+    seed_ts = first_seen_ts or now_dt
+    seed_iso = seed_ts.isoformat()
+    seed_day = seed_ts.date()
+
+    new_id = deterministic_story_id(title, seed_day)
+    slug = make_slug(title, seed_day)
     payload = {
         "id": new_id,
         "title": title[:500],
@@ -65,7 +76,7 @@ def upsert_story(
         "category": category or "India Top News",
         "summary": summary,
         "is_active": True,
-        "first_seen_at": now,
+        "first_seen_at": seed_iso,
         "last_updated": now,
     }
     # ON CONFLICT DO NOTHING via upsert with ignore_duplicates.
@@ -75,28 +86,63 @@ def upsert_story(
 
 
 def insert_events(story_id: str, events: list[EventOut], articles: list[Article]) -> int:
-    """Insert new events idempotently. Returns count inserted."""
+    """Insert new events idempotently. Returns count inserted.
+
+    Clamps each event's ``event_timestamp`` into the min/max ``published_at``
+    range of the cluster articles (with a 12-hour cushion on each side) to
+    prevent Gemini from hallucinating ``today`` when the sources are historical.
+    Falls back to the matched source article's timestamp when available,
+    otherwise the cluster median.
+    """
     if not events:
         return 0
     client = get_client()
+
+    # Build the article publish-time envelope for this cluster.
+    pub_times = sorted(a.published_at for a in articles if a.published_at)
+    if pub_times:
+        lo = pub_times[0] - timedelta(hours=12)
+        hi = pub_times[-1] + timedelta(hours=12)
+        median = pub_times[len(pub_times) // 2]
+    else:
+        lo = hi = median = datetime.now(timezone.utc)
+
     rows = []
     for ev in events:
         source_url = ""
         source_name = ""
         content_hash = ""
+        source_pub: datetime | None = None
         if 0 <= ev.source_index < len(articles):
             a = articles[ev.source_index]
             source_url = a.url
             source_name = a.source
             content_hash = a.content_hash
+            source_pub = a.published_at
         else:
             content_hash = hashlib.sha256(
                 f"{story_id}|{ev.event_timestamp.isoformat()}|{ev.headline}".encode()
             ).hexdigest()
+
+        ts = ev.event_timestamp
+        # Ensure timezone-aware for comparison.
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+        if not (lo <= ts <= hi):
+            snapped = source_pub or median
+            log.info(
+                "event_timestamp_clamped",
+                story_id=story_id,
+                original=ts.isoformat(),
+                snapped_to=snapped.isoformat(),
+                headline=ev.headline[:60],
+            )
+            ts = snapped
+
         rows.append(
             {
                 "story_id": story_id,
-                "event_timestamp": ev.event_timestamp.isoformat(),
+                "event_timestamp": ts.isoformat(),
                 "headline": ev.headline,
                 "details": ev.details or "",
                 "source_url": source_url,
