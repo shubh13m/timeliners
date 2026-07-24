@@ -45,7 +45,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
-          NEXT_PUBLIC_SITE_URL: ${{ vars.SITE_URL || 'https://timeliner.pages.dev' }}
+          NEXT_PUBLIC_SITE_URL: ${{ vars.SITE_URL || 'https://timelined.pages.dev' }}
         run: pnpm build
 
       - name: Deploy to Cloudflare Pages
@@ -53,4 +53,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy web/out --project-name=timeliner --branch=main
+          command: pages deploy web/out --project-name=timelined --branch=main

@@ -4,7 +4,7 @@ import type { Story } from "@/lib/types";
 export const dynamic = "force-static";
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://timeliner.pages.dev";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://timelined.pages.dev";
 
 function escapeXml(s: string): string {
   return s

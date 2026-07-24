@@ -7,7 +7,7 @@ import { siteJsonLd } from "@/lib/ld";
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://timeliner.pages.dev";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://timelined.pages.dev";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

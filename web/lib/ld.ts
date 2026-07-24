@@ -1,6 +1,6 @@
 import type { Story, TimelineEvent } from "./types";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://timeliner.pages.dev";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://timelined.pages.dev";
 
 export function newsArticleJsonLd(story: Story, events: TimelineEvent[]) {
   const first = events[events.length - 1];
