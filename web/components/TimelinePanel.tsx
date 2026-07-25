@@ -25,11 +25,18 @@ function fmtDate(iso: string): string {
 type Props = { events: TimelineEvent[] };
 
 export default function TimelinePanel({ events }: Props) {
-  const sorted = [...events].sort(
-    (a, b) =>
-      new Date(b.event_timestamp).getTime() -
-      new Date(a.event_timestamp).getTime()
-  );
+  const sorted = [...events].sort((a, b) => {
+    const bt = new Date(b.event_timestamp).getTime();
+    const at = new Date(a.event_timestamp).getTime();
+    if (bt !== at) return bt - at;
+    // Tiebreaker for events with identical event_timestamp: fall back to
+    // created_at (insertion order) DESC so later-discovered events sit above
+    // earlier ones, then id for full determinism.
+    const bc = new Date(b.created_at || 0).getTime();
+    const ac = new Date(a.created_at || 0).getTime();
+    if (bc !== ac) return bc - ac;
+    return (b.id || "").localeCompare(a.id || "");
+  });
 
   if (sorted.length === 0) {
     return (

@@ -107,7 +107,25 @@ def insert_events(story_id: str, events: list[EventOut], articles: list[Article]
     else:
         lo = hi = median = datetime.now(timezone.utc)
 
+    # Pull any existing event timestamps for this story so we can nudge
+    # newly-inserted events off collisions. Same timestamp -> arbitrary sort
+    # order in the timeline UI, which is what we're trying to avoid.
+    existing_ts: set[str] = set()
+    try:
+        existing = (
+            client.table("timeline_events")
+            .select("event_timestamp")
+            .eq("story_id", story_id)
+            .execute()
+            .data
+            or []
+        )
+        existing_ts = {row["event_timestamp"] for row in existing if row.get("event_timestamp")}
+    except Exception:  # pragma: no cover - defensive
+        pass
+
     rows = []
+    used_ts: set[str] = set(existing_ts)
     for ev in events:
         source_url = ""
         source_name = ""
@@ -138,6 +156,13 @@ def insert_events(story_id: str, events: list[EventOut], articles: list[Article]
                 headline=ev.headline[:60],
             )
             ts = snapped
+
+        # Nudge off collisions with events already on this story (or events
+        # earlier in this batch). +1s per collision preserves chronology
+        # intent while guaranteeing a stable timeline sort.
+        while ts.isoformat() in used_ts:
+            ts = ts + timedelta(seconds=1)
+        used_ts.add(ts.isoformat())
 
         rows.append(
             {
