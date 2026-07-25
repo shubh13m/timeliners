@@ -7,7 +7,7 @@ export default function NotFound() {
       <p className="mb-4 text-gray-400">
         It may have been archived or the link is incorrect.
       </p>
-      <Link href="/" className="text-blue-400 hover:underline">
+      <Link href="/" className="text-red-400 hover:underline">
         ← Back to feed
       </Link>
     </div>

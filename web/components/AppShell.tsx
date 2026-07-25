@@ -17,7 +17,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-20 border-b border-white/10 bg-black/60 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
           <Link href="/" className="text-lg font-bold tracking-tight text-white">
-            <span className="text-blue-400">T</span>imelined
+            <span className="text-red-500">T</span>imelined
           </Link>
           <div className="flex-1">
             <Suspense fallback={<div className="h-9" />}>

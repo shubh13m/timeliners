@@ -1,5 +1,5 @@
 // Timelined service worker — offline shell + web push
-const CACHE = "timelined-v1";
+const CACHE = "timelined-v2";
 const SHELL = ["/", "/manifest.webmanifest", "/favicon.ico", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (event) => {

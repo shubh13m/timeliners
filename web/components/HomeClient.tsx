@@ -80,7 +80,7 @@ export default function HomeClient({ stories }: { stories: Story[] }) {
             No stories on this date.{" "}
             <a
               href={cat === "All" ? "/?all=1" : `/?cat=${encodeURIComponent(cat)}&all=1`}
-              className="text-blue-400 hover:underline"
+              className="text-red-400 hover:underline"
             >
               See all dates →
             </a>

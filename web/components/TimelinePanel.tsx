@@ -43,7 +43,7 @@ export default function TimelinePanel({ events }: Props) {
     <ol className="relative border-l-2 border-white/10 pl-6">
       {sorted.map((e) => (
         <li key={e.id} className="relative mb-6 last:mb-0">
-          <span className="absolute -left-[33px] flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-xs">
+          <span className="absolute -left-[33px] flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-xs">
             {EVENT_ICON[e.event_type] || "•"}
           </span>
           <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
@@ -64,7 +64,7 @@ export default function TimelinePanel({ events }: Props) {
                 href={e.source_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-2 inline-block text-xs text-blue-400 hover:underline"
+                className="mt-2 inline-block text-xs text-red-400 hover:underline"
               >
                 {e.source_name || "Source"} ↗
               </a>

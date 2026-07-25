@@ -60,7 +60,7 @@ export default function DateCarousel({ days = 30 }: { days?: number }) {
           href={hrefAll()}
           className={`shrink-0 rounded-lg px-3 py-1.5 text-xs transition ${
             showAll
-              ? "bg-blue-500 text-white"
+              ? "bg-red-600 text-white"
               : "bg-white/5 text-gray-300 hover:bg-white/10"
           }`}
         >
@@ -75,7 +75,7 @@ export default function DateCarousel({ days = 30 }: { days?: number }) {
               href={hrefForDate(key)}
               className={`shrink-0 rounded-lg px-3 py-1.5 text-xs transition ${
                 on
-                  ? "bg-blue-500 text-white"
+                  ? "bg-red-600 text-white"
                   : "bg-white/5 text-gray-300 hover:bg-white/10"
               }`}
             >

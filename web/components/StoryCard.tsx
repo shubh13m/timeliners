@@ -18,8 +18,8 @@ export default function StoryCard({ story, active }: Props) {
   return (
     <Link
       href={`/story/${story.slug}/`}
-      className={`block rounded-xl border border-white/10 p-4 transition hover:border-blue-400/50 hover:bg-white/[0.03] ${
-        active ? "border-blue-400 bg-blue-500/5" : "bg-white/[0.02]"
+      className={`block rounded-xl border border-white/10 p-4 transition hover:border-red-500/50 hover:bg-white/[0.03] ${
+        active ? "border-red-500 bg-red-600/5" : "bg-white/[0.02]"
       }`}
     >
       <div className="mb-2 flex items-center justify-between text-xs text-gray-400">

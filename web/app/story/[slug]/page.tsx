@@ -81,7 +81,7 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
       />
       <Link
         href="/"
-        className="mb-4 inline-block text-sm text-blue-400 hover:underline"
+        className="mb-4 inline-block text-sm text-red-400 hover:underline"
       >
         ← Back to feed
       </Link>
