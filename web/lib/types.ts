@@ -13,6 +13,10 @@ export type Story = {
   event_dates?: string[];
   /** Total number of timeline_events rows for this story. */
   event_count?: number;
+  /** Max(event_timestamp) across this story's events — the true "last
+   * activity" moment. Used for homepage sort + relative-time chip.
+   * Falls back to last_updated when the story has no events yet. */
+  latest_event_at?: string;
 };
 
 export type TimelineEvent = {

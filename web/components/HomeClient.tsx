@@ -61,9 +61,14 @@ export default function HomeClient({ stories }: { stories: Story[] }) {
       list = list.filter((s) => s.event_dates?.includes(effectiveDate));
     }
     return [...list].sort((a, b) => {
-      const av = a.event_dates?.[0] ?? a.last_updated ?? "";
-      const bv = b.event_dates?.[0] ?? b.last_updated ?? "";
+      // Sort by the story's latest event timestamp (full precision, not
+      // date-only). Two stories both updated today should be ordered by
+      // time-of-day of their latest event, not by trending_score.
+      const av = a.latest_event_at ?? a.last_updated ?? "";
+      const bv = b.latest_event_at ?? b.last_updated ?? "";
       if (av !== bv) return bv.localeCompare(av);
+      // Only reachable when two stories share the exact same latest
+      // event timestamp — bigger timeline wins the tie.
       return (b.trending_score || 0) - (a.trending_score || 0);
     });
   }, [inCategory, effectiveDate]);

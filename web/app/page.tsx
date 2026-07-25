@@ -38,10 +38,17 @@ async function fetchStories(): Promise<Story[]> {
   }
   const byStory = new Map<string, Set<string>>();
   const counts = new Map<string, number>();
+  // Track the max event_timestamp per story so the client can sort by the
+  // real last-activity moment (not by ingest-run time or date-only).
+  const latest = new Map<string, string>();
   for (const e of events as { story_id: string; event_timestamp: string }[]) {
     counts.set(e.story_id, (counts.get(e.story_id) ?? 0) + 1);
-    const day = (e.event_timestamp || "").slice(0, 10);
-    if (!day) continue;
+    const ts = e.event_timestamp || "";
+    if (!ts) continue;
+    const prev = latest.get(e.story_id);
+    // ISO timestamps compare correctly as strings.
+    if (!prev || ts > prev) latest.set(e.story_id, ts);
+    const day = ts.slice(0, 10);
     if (!byStory.has(e.story_id)) byStory.set(e.story_id, new Set());
     byStory.get(e.story_id)!.add(day);
   }
@@ -49,6 +56,7 @@ async function fetchStories(): Promise<Story[]> {
     ...s,
     event_dates: Array.from(byStory.get(s.id) ?? []).sort().reverse(),
     event_count: counts.get(s.id) ?? 0,
+    latest_event_at: latest.get(s.id) ?? s.last_updated,
   }));
 }
 

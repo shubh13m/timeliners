@@ -27,7 +27,9 @@ export default function StoryCard({ story, active }: Props) {
     >
       <div className="mb-2 flex items-center justify-between text-xs text-gray-400">
         <span className="rounded bg-white/5 px-2 py-0.5">{story.category}</span>
-        <span>{timeAgo(story.last_updated)}</span>
+        {/* Relative to the story's latest timeline event, not to ingest
+            run time — so "1h ago" tracks the actual news, not the cron. */}
+        <span>{timeAgo(story.latest_event_at ?? story.last_updated)}</span>
       </div>
       <h3 className="text-base font-semibold leading-snug text-white line-clamp-3">
         {story.title}
