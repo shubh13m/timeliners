@@ -47,6 +47,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-[#0a0a0a] text-gray-100">
+        {/* Boot splash — rendered server-side so it appears on first paint,
+            before React hydrates. Fades itself out via CSS animation
+            (~1.8s total) so users have time to read the tagline. */}
+        <div className="splash" aria-hidden="true">
+          <div className="splash-inner">
+            <div className="splash-brand">
+              <span className="splash-brand-accent">T</span>imelined
+            </div>
+            <div className="splash-tagline">
+              Follow the story, not just the headline.
+            </div>
+          </div>
+        </div>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd()) }}

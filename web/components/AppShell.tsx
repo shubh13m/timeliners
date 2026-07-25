@@ -15,7 +15,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-full flex-col">
       <header className="sticky top-0 z-20 border-b border-white/10 bg-black/60 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 pt-3">
           <Link
             href="/"
             aria-label="Timelined home"
@@ -36,6 +36,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
           <SubscribeButton />
         </div>
+        {/* Tagline sits right under the header row so first-time visitors
+            instantly understand what the site does. Kept small and muted
+            so it doesn't compete with the logo/search. */}
+        <p className="mx-auto max-w-6xl px-4 pb-2 pt-1 text-xs italic text-gray-400 sm:text-sm">
+          Follow the story, not just the headline.
+        </p>
       </header>
       <main className="flex-1 pb-20">{children}</main>
       <footer className="border-t border-white/10 py-4 text-center text-xs text-gray-500">
