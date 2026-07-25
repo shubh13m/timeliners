@@ -15,8 +15,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-full flex-col">
       <header className="sticky top-0 z-20 border-b border-white/10 bg-black/60 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
-          <Link href="/" className="text-lg font-bold tracking-tight text-white">
+        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
+          <Link
+            href="/"
+            aria-label="Timelined home"
+            className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl"
+          >
             <span className="text-red-500">T</span>imelined
           </Link>
           <div className="flex-1">

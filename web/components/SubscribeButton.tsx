@@ -28,22 +28,34 @@ export default function SubscribeButton() {
     setState(res.ok ? "granted" : "denied");
   }
 
-  const label =
-    state === "loading"
-      ? "Subscribing…"
-      : state === "granted"
-      ? "🔔 Subscribed"
+  // Icon-only button. Reclaims header space for a bigger logo while still
+  // exposing state via color, title, and disabled attribute.
+  const icon =
+    state === "granted" ? "🔔" : state === "denied" ? "🔕" : state === "loading" ? "…" : "🔔";
+  const title =
+    state === "granted"
+      ? "Subscribed to updates"
       : state === "denied"
-      ? "🔕 Blocked"
-      : "🔔 Get updates";
+      ? "Notifications blocked"
+      : state === "loading"
+      ? "Subscribing…"
+      : "Get updates";
 
   return (
     <button
       onClick={onClick}
       disabled={state === "loading" || state === "granted"}
-      className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-gray-200 transition hover:bg-white/10 disabled:opacity-70"
+      title={title}
+      aria-label={title}
+      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 text-base transition hover:bg-white/10 disabled:opacity-70 ${
+        state === "granted"
+          ? "bg-red-600/20 text-red-300"
+          : state === "denied"
+          ? "bg-white/5 text-gray-500"
+          : "bg-white/5 text-gray-200"
+      }`}
     >
-      {label}
+      {icon}
     </button>
   );
 }
