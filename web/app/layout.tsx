@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/AppShell";
@@ -29,6 +30,14 @@ export const metadata: Metadata = {
     images: ["/og-default.png"],
   },
   twitter: { card: "summary_large_image", images: ["/og-default.png"] },
+};
+
+// Tints the mobile browser address bar and Android status bar. Kept in sync
+// with manifest.ts theme_color so the PWA install popup, launched app, and
+// in-browser view all show the same red.
+export const viewport: Viewport = {
+  themeColor: "#dc2626",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
