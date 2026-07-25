@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import CategoryTabs from "@/components/CategoryTabs";
+import DateStepper from "@/components/DateStepper";
 import Feed from "@/components/Feed";
 import { CATEGORY_ORDER, type Category, type Story } from "@/lib/types";
 
@@ -11,20 +13,6 @@ export default function HomeClient({ stories }: { stories: Story[] }) {
   const cat = (sp.get("cat") as Category) || "All";
   const dateParam = sp.get("date"); // explicit YYYY-MM-DD
   const showAll = sp.get("all") === "1";
-
-  // Default: the most recent date that actually has events (usually today
-  // during normal cron ingest; falls back to the latest backfill day when
-  // no fresh ingest has run yet). Users opt in to "All dates" to see history.
-  const latestEventDate = useMemo(() => {
-    let latest = "";
-    for (const s of stories) {
-      for (const d of s.event_dates ?? []) {
-        if (d > latest) latest = d;
-      }
-    }
-    return latest || null;
-  }, [stories]);
-  const effectiveDate = showAll ? null : dateParam || latestEventDate;
 
   const todayKey = useMemo(() => {
     const d = new Date();
@@ -38,52 +26,90 @@ export default function HomeClient({ stories }: { stories: Story[] }) {
   const categories = useMemo<Category[]>(() => {
     const present = new Set(stories.map((s) => s.category).filter(Boolean));
     const ordered = CATEGORY_ORDER.filter((c) => c === "All" || present.has(c));
-    const extras = [...present].filter((c) => !CATEGORY_ORDER.includes(c as (typeof CATEGORY_ORDER)[number]));
+    const extras = [...present].filter(
+      (c) => !CATEGORY_ORDER.includes(c as (typeof CATEGORY_ORDER)[number])
+    );
     return [...ordered, ...extras];
   }, [stories]);
 
+  // First narrow by category — the stepper should only walk through dates
+  // that actually have stories in the selected category.
+  const inCategory = useMemo(
+    () => (cat === "All" ? stories : stories.filter((s) => s.category === cat)),
+    [stories, cat]
+  );
+
+  // All dates present in the current category, sorted DESC (newest first).
+  const availableDates = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of inCategory) for (const d of s.event_dates ?? []) set.add(d);
+    return [...set].sort().reverse();
+  }, [inCategory]);
+
+  // Default = today if today has stories in the current category, else the
+  // newest date that does. "All" (showAll) opts out of date filtering.
+  const effectiveDate = useMemo(() => {
+    if (showAll) return null;
+    if (dateParam) return dateParam;
+    if (availableDates.includes(todayKey)) return todayKey;
+    return availableDates[0] ?? null;
+  }, [showAll, dateParam, availableDates, todayKey]);
+
   const filtered = useMemo(() => {
-    let list = stories;
-    if (cat !== "All") list = list.filter((s) => s.category === cat);
+    let list = inCategory;
     if (effectiveDate) {
       list = list.filter((s) => s.event_dates?.includes(effectiveDate));
     }
-    // Sort by the story's most recent timeline event (event_dates is stored
-    // in descending order, so event_dates[0] is the latest activity). This
-    // beats trending_score, which just counts total events and can float
-    // stale-but-large stories to the top.
     return [...list].sort((a, b) => {
       const av = a.event_dates?.[0] ?? a.last_updated ?? "";
       const bv = b.event_dates?.[0] ?? b.last_updated ?? "";
       if (av !== bv) return bv.localeCompare(av);
-      // Tiebreaker: bigger timelines first (more established stories).
       return (b.trending_score || 0) - (a.trending_score || 0);
     });
-  }, [stories, cat, effectiveDate]);
+  }, [inCategory, effectiveDate]);
 
-  const dateLabel = effectiveDate === todayKey ? "today" : effectiveDate;
+  const preserveParams = useMemo<Record<string, string>>(() => {
+    const p: Record<string, string> = {};
+    if (cat && cat !== "All") p.cat = cat;
+    return p;
+  }, [cat]);
+
+  // If the selected date has zero results in the current category, suggest
+  // the nearest available date instead of a dead-end.
+  const suggestion = useMemo(() => {
+    if (filtered.length > 0 || !effectiveDate) return null;
+    const nearest = availableDates[0];
+    if (!nearest) return null;
+    const qs = new URLSearchParams(preserveParams);
+    if (nearest !== todayKey) qs.set("date", nearest);
+    return { date: nearest, href: qs.toString() ? `/?${qs.toString()}` : "/" };
+  }, [filtered.length, effectiveDate, availableDates, preserveParams, todayKey]);
 
   return (
     <>
       <CategoryTabs active={cat} categories={categories} />
-      {effectiveDate && (
-        <div className="mt-2 flex items-center gap-2 text-sm text-gray-400">
-          <span>
-            Showing stories with updates on{" "}
-            <span className="text-gray-200">{dateLabel}</span>
-          </span>
-        </div>
-      )}
+      <DateStepper
+        activeDate={effectiveDate}
+        availableDates={availableDates}
+        today={todayKey}
+        preserveParams={preserveParams}
+      />
       <div className="mt-4 pb-20">
         {filtered.length === 0 ? (
           <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-8 text-center text-sm text-gray-400">
-            No stories on this date.{" "}
-            <a
-              href={cat === "All" ? "/?all=1" : `/?cat=${encodeURIComponent(cat)}&all=1`}
-              className="text-red-400 hover:underline"
-            >
-              See all dates →
-            </a>
+            {suggestion ? (
+              <>
+                No {cat === "All" ? "" : `${cat} `}stories on this date.{" "}
+                <Link
+                  href={suggestion.href}
+                  className="text-red-400 hover:underline"
+                >
+                  Jump to {suggestion.date} →
+                </Link>
+              </>
+            ) : (
+              <>No stories yet.</>
+            )}
           </div>
         ) : (
           <Feed stories={filtered} />

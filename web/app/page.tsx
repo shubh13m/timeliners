@@ -1,4 +1,3 @@
-import DateCarousel from "@/components/DateCarousel";
 import HomeClient from "@/components/HomeClient";
 import { supabaseBuild } from "@/lib/supabase";
 import type { Story } from "@/lib/types";
@@ -60,9 +59,6 @@ export default async function HomePage() {
     <div className="mx-auto max-w-6xl px-4 py-4">
       <Suspense fallback={<div className="h-10" />}>
         <HomeClient stories={stories} />
-      </Suspense>
-      <Suspense fallback={null}>
-        <DateCarousel />
       </Suspense>
     </div>
   );
