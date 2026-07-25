@@ -14,10 +14,11 @@ function timeAgo(iso: string): string {
 type Props = { story: Story; active?: boolean };
 
 export default function StoryCard({ story, active }: Props) {
-  // Use the real timeline_events count when the caller attached it. Fall back
-  // to trending_score only as a last resort (it's events_last_24h * sources,
-  // not total events, so it never matched the count shown inside the story).
-  const eventCount = story.event_count ?? Math.max(1, story.trending_score || 1);
+  // event_count is the authoritative timeline row count. Only show it when
+  // we actually have it — the previous fallback to trending_score conflated
+  // two different metrics (score = events_last_24h * sources, not a count)
+  // and, worse, minted "1 event" for empty stories.
+  const eventCount = story.event_count;
   return (
     <Link
       href={`/story/${story.slug}/`}
@@ -36,7 +37,9 @@ export default function StoryCard({ story, active }: Props) {
       </h3>
       <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
         <span>
-          {eventCount} event{eventCount === 1 ? "" : "s"}
+          {eventCount != null && eventCount > 0
+            ? `${eventCount} event${eventCount === 1 ? "" : "s"}`
+            : "\u00a0"}
         </span>
         {story.trending_score > 2 && (
           <span className="text-orange-400">🔥 trending</span>

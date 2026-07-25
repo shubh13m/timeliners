@@ -1,5 +1,6 @@
 import HomeClient from "@/components/HomeClient";
 import { supabaseBuild } from "@/lib/supabase";
+import { istDate } from "@/lib/dates";
 import type { Story } from "@/lib/types";
 import { Suspense } from "react";
 
@@ -48,7 +49,10 @@ async function fetchStories(): Promise<Story[]> {
     const prev = latest.get(e.story_id);
     // ISO timestamps compare correctly as strings.
     if (!prev || ts > prev) latest.set(e.story_id, ts);
-    const day = ts.slice(0, 10);
+    // Bucket by IST day, not UTC day. An event at 20:00 UTC = 01:30 IST next
+    // day should file under the IST date shown in the timeline panel, not
+    // the UTC date underlying the raw timestamp.
+    const day = istDate(ts);
     if (!byStory.has(e.story_id)) byStory.set(e.story_id, new Set());
     byStory.get(e.story_id)!.add(day);
   }

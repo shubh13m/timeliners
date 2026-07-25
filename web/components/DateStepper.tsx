@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
+import { istDateAnchor } from "@/lib/dates";
 
 type Props = {
   /** Currently selected date, YYYY-MM-DD. null = "All". */
@@ -30,11 +31,15 @@ function hrefFor(
 }
 
 function formatLabel(date: string, today: string): string {
-  const d = new Date(`${date}T00:00:00`);
-  const t = new Date(`${today}T00:00:00`);
+  // Anchor both dates at IST noon so weekday/month formatting is stable
+  // regardless of the viewer's local timezone.
+  const d = istDateAnchor(date);
+  const t = istDateAnchor(today);
   const diffDays = Math.round((t.getTime() - d.getTime()) / 86_400_000);
-  const weekday = d.toLocaleDateString(undefined, { weekday: "short" });
+  const opts: Intl.DateTimeFormatOptions = { timeZone: "Asia/Kolkata" };
+  const weekday = d.toLocaleDateString(undefined, { ...opts, weekday: "short" });
   const monthDay = d.toLocaleDateString(undefined, {
+    ...opts,
     month: "short",
     day: "numeric",
   });
@@ -63,16 +68,17 @@ export default function DateStepper({
       };
     }
     const idx = availableDates.indexOf(activeDate);
-    // If current date isn't in availableDates (e.g. category changed and this
-    // date has no stories in the new category), fall back gracefully.
+    // If current date isn't in availableDates (e.g. category changed and
+    // this date has no stories in the new category), let the user jump to
+    // the newest available date via the newer (‹) arrow. The older (›)
+    // arrow is disabled to avoid the previous bug where both arrows led to
+    // the same destination.
     if (idx === -1) {
       return {
         newerHref: availableDates[0]
           ? hrefFor({ date: availableDates[0] }, preserveParams, today)
           : null,
-        olderHref: availableDates[0]
-          ? hrefFor({ date: availableDates[0] }, preserveParams, today)
-          : null,
+        olderHref: null,
       };
     }
     const newer = idx > 0 ? availableDates[idx - 1] : null;

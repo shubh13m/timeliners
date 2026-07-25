@@ -224,18 +224,8 @@ def refresh_trending_score(story_id: str) -> None:
             {"last_updated": latest.data[0]["event_timestamp"]}
         ).eq("id", story_id).execute()
 
-    # Fetch recent events; compute in Python (avoids RPC dependency).
-    res = (
-        client.table("timeline_events")
-        .select("source_name,created_at")
-        .eq("story_id", story_id)
-        .gte(
-            "created_at",
-            (datetime.now(timezone.utc).replace(microsecond=0)).isoformat(),
-        )
-        .execute()
-    )
-    # Simpler: count last-24h events by created_at using order + limit.
+    # Count the last-24h events by pulling the most recent 50 and filtering
+    # in Python — avoids depending on a Postgres RPC for a simple window.
     res2 = (
         client.table("timeline_events")
         .select("source_name,created_at")

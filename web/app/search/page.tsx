@@ -15,15 +15,51 @@ function SearchInner() {
   useEffect(() => {
     if (!q) return;
     setLoading(true);
-    supabaseBrowser()
-      .rpc("search_stories", { q, lim: 30 })
-      .then(({ data, error }) => {
+    const sb = supabaseBrowser();
+    sb.rpc("search_stories", { q, lim: 30 })
+      .then(async ({ data, error }) => {
         if (error) {
           console.error(error);
           setResults([]);
-        } else {
-          setResults((data as Story[]) || []);
+          setLoading(false);
+          return;
         }
+        const stories = ((data as Story[]) || []).slice();
+        if (stories.length === 0) {
+          setResults(stories);
+          setLoading(false);
+          return;
+        }
+        // The search RPC only returns raw story rows. Hydrate the same
+        // per-story event fields the homepage uses (event_count and
+        // latest_event_at) so cards render the correct count and "X ago"
+        // chip instead of falling back to trending_score / last_updated.
+        const ids = stories.map((s) => s.id);
+        const { data: events, error: evErr } = await sb
+          .from("timeline_events")
+          .select("story_id,event_timestamp")
+          .in("story_id", ids);
+        if (evErr) {
+          console.error("hydrate search results failed", evErr);
+          setResults(stories);
+          setLoading(false);
+          return;
+        }
+        const counts = new Map<string, number>();
+        const latest = new Map<string, string>();
+        for (const e of (events as { story_id: string; event_timestamp: string }[]) || []) {
+          counts.set(e.story_id, (counts.get(e.story_id) ?? 0) + 1);
+          const ts = e.event_timestamp || "";
+          const prev = latest.get(e.story_id);
+          if (ts && (!prev || ts > prev)) latest.set(e.story_id, ts);
+        }
+        setResults(
+          stories.map((s) => ({
+            ...s,
+            event_count: counts.get(s.id) ?? 0,
+            latest_event_at: latest.get(s.id) ?? s.last_updated,
+          }))
+        );
         setLoading(false);
       });
   }, [q]);

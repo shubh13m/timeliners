@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import CategoryTabs from "@/components/CategoryTabs";
 import DateStepper from "@/components/DateStepper";
 import Feed from "@/components/Feed";
+import { istToday } from "@/lib/dates";
 import { CATEGORY_ORDER, type Category, type Story } from "@/lib/types";
 
 export default function HomeClient({ stories }: { stories: Story[] }) {
@@ -14,13 +15,10 @@ export default function HomeClient({ stories }: { stories: Story[] }) {
   const dateParam = sp.get("date"); // explicit YYYY-MM-DD
   const showAll = sp.get("all") === "1";
 
-  const todayKey = useMemo(() => {
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
-  }, []);
+  // Compute "today" in IST so the feed matches the timeline panel (which
+  // also renders in Asia/Kolkata). Using the browser's local timezone would
+  // point at yesterday for ~5.5h every night for anyone west of IST.
+  const todayKey = useMemo(() => istToday(), []);
 
   // Categories that actually exist in the current story set (+ "All").
   const categories = useMemo<Category[]>(() => {
