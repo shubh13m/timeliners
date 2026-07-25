@@ -14,7 +14,10 @@ function timeAgo(iso: string): string {
 type Props = { story: Story; active?: boolean };
 
 export default function StoryCard({ story, active }: Props) {
-  const eventCount = Math.max(1, story.trending_score || 1);
+  // Use the real timeline_events count when the caller attached it. Fall back
+  // to trending_score only as a last resort (it's events_last_24h * sources,
+  // not total events, so it never matched the count shown inside the story).
+  const eventCount = story.event_count ?? Math.max(1, story.trending_score || 1);
   return (
     <Link
       href={`/story/${story.slug}/`}

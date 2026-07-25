@@ -11,6 +11,8 @@ export type Story = {
   created_at: string;
   /** Distinct YYYY-MM-DD dates that this story has timeline events on. */
   event_dates?: string[];
+  /** Total number of timeline_events rows for this story. */
+  event_count?: number;
 };
 
 export type TimelineEvent = {

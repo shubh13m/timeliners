@@ -26,7 +26,6 @@ export default function DateCarousel({ days = 30 }: { days?: number }) {
   const showAll = sp.get("all") === "1";
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const todayKey = formatDate(today);
 
   const dates = Array.from({ length: days }, (_, i) => {
     const d = new Date(today);
@@ -42,7 +41,11 @@ export default function DateCarousel({ days = 30 }: { days?: number }) {
   const hrefForDate = (key: string) => {
     const params = new URLSearchParams();
     if (cat) params.set("cat", cat);
-    if (key !== todayKey) params.set("date", key);
+    // Always include the date, even when it's today, so clicking the Today
+    // pill actually pins the filter to today (previously '/' meant "default =
+    // latest date with events", which quietly fell back to yesterday when
+    // today had no ingest yet).
+    params.set("date", key);
     return hrefWith(params);
   };
 
@@ -64,11 +67,14 @@ export default function DateCarousel({ days = 30 }: { days?: number }) {
               : "bg-white/5 text-gray-300 hover:bg-white/10"
           }`}
         >
-          All dates
+          All
         </Link>
         {dates.map((d) => {
           const key = formatDate(d);
-          const on = !showAll && (activeDate === key || (!activeDate && key === todayKey));
+          // Highlight only when the URL explicitly matches this date. On a
+          // bare '/' visit no pill lights up, so the "default = latest event
+          // date" behaviour is visually distinct from an explicit Today click.
+          const on = !showAll && activeDate === key;
           return (
             <Link
               key={key}

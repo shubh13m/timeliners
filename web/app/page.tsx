@@ -38,7 +38,9 @@ async function fetchStories(): Promise<Story[]> {
     return stories;
   }
   const byStory = new Map<string, Set<string>>();
+  const counts = new Map<string, number>();
   for (const e of events as { story_id: string; event_timestamp: string }[]) {
+    counts.set(e.story_id, (counts.get(e.story_id) ?? 0) + 1);
     const day = (e.event_timestamp || "").slice(0, 10);
     if (!day) continue;
     if (!byStory.has(e.story_id)) byStory.set(e.story_id, new Set());
@@ -47,6 +49,7 @@ async function fetchStories(): Promise<Story[]> {
   return stories.map((s) => ({
     ...s,
     event_dates: Array.from(byStory.get(s.id) ?? []).sort().reverse(),
+    event_count: counts.get(s.id) ?? 0,
   }));
 }
 

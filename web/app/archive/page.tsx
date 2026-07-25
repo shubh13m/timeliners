@@ -16,7 +16,20 @@ async function fetchAll(): Promise<Story[]> {
     .select("*")
     .order("last_updated", { ascending: false })
     .limit(500);
-  return (data as Story[]) || [];
+  const stories = (data as Story[]) || [];
+  if (stories.length === 0) return stories;
+
+  // Attach real event counts so cards match the timeline inside each story.
+  const ids = stories.map((s) => s.id);
+  const { data: events } = await sb
+    .from("timeline_events")
+    .select("story_id")
+    .in("story_id", ids);
+  const counts = new Map<string, number>();
+  for (const e of (events as { story_id: string }[]) || []) {
+    counts.set(e.story_id, (counts.get(e.story_id) ?? 0) + 1);
+  }
+  return stories.map((s) => ({ ...s, event_count: counts.get(s.id) ?? 0 }));
 }
 
 export default async function ArchivePage() {
