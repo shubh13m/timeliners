@@ -127,7 +127,7 @@ def run_backfill(start: date, end: date, dry_run: bool = False) -> int:
             continue
 
         try:
-            s, e_ = process_articles(articles, settings, gemini, dry_run=dry_run)
+            s, e_, _new = process_articles(articles, settings, gemini, dry_run=dry_run)
             total_stories += s
             total_events += e_
             log.info(

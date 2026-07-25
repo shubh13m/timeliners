@@ -6,7 +6,7 @@ import { Suspense } from "react";
 
 export const dynamic = "force-static";
 
-async function fetchStories(): Promise<Story[]> {
+async function fetchStories(): Promise<{ stories: Story[]; error?: string }> {
   const sb = supabaseBuild();
   // NOTE: we don't order server-side by trending_score/last_updated because
   // that biases which 100 stories we pick. `last_updated` is set to ingest
@@ -20,11 +20,14 @@ async function fetchStories(): Promise<Story[]> {
     .order("last_updated", { ascending: false })
     .limit(100);
   if (error) {
+    // The homepage is statically generated at deploy time; a fetch failure
+    // here means the deploy baked a stale/empty feed. Surface it visibly
+    // instead of pretending the site has zero stories.
     console.error("fetch stories failed", error);
-    return [];
+    return { stories: [], error: error.message || "Failed to load stories." };
   }
   const stories = data as Story[];
-  if (stories.length === 0) return stories;
+  if (stories.length === 0) return { stories };
 
   // Attach the distinct set of YYYY-MM-DD dates each story has events on,
   // so the client-side date filter can match stories by any timeline event.
@@ -35,7 +38,7 @@ async function fetchStories(): Promise<Story[]> {
     .in("story_id", ids);
   if (evErr) {
     console.error("fetch story event dates failed", evErr);
-    return stories;
+    return { stories };
   }
   const byStory = new Map<string, Set<string>>();
   const counts = new Map<string, number>();
@@ -56,19 +59,31 @@ async function fetchStories(): Promise<Story[]> {
     if (!byStory.has(e.story_id)) byStory.set(e.story_id, new Set());
     byStory.get(e.story_id)!.add(day);
   }
-  return stories.map((s) => ({
-    ...s,
-    event_dates: Array.from(byStory.get(s.id) ?? []).sort().reverse(),
-    event_count: counts.get(s.id) ?? 0,
-    latest_event_at: latest.get(s.id) ?? s.last_updated,
-  }));
+  return {
+    stories: stories.map((s) => ({
+      ...s,
+      event_dates: Array.from(byStory.get(s.id) ?? []).sort().reverse(),
+      event_count: counts.get(s.id) ?? 0,
+      latest_event_at: latest.get(s.id) ?? s.last_updated,
+    })),
+  };
 }
 
 export default async function HomePage() {
-  const stories = await fetchStories();
+  const { stories, error } = await fetchStories();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-4">
+      {error && (
+        <div
+          role="alert"
+          className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+        >
+          <span className="font-semibold">Couldn&apos;t load the latest stories.</span>{" "}
+          The feed you&apos;re seeing may be stale. Try refreshing in a minute — the
+          worker retries every few hours.
+        </div>
+      )}
       <Suspense fallback={<div className="h-10" />}>
         <HomeClient stories={stories} />
       </Suspense>

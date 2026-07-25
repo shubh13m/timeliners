@@ -61,14 +61,14 @@ def _build_events_prompt(clusters_with_context: list[dict]) -> str:
 
 def process_articles(
     articles: list, settings, gemini: GeminiClient, dry_run: bool = False
-) -> tuple[int, int]:
+) -> tuple[int, int, int]:
     """Cluster → match → dedup → generate events → persist.
 
-    Returns (stories_updated, events_inserted).
+    Returns (stories_updated, events_inserted, new_stories_count).
     Extracted from run() so backfill can reuse the same pipeline.
     """
     if not articles:
-        return 0, 0
+        return 0, 0, 0
 
     # Phase 2: cluster
     try:
@@ -78,7 +78,7 @@ def process_articles(
         raise
     if not clusters:
         log.info("no_clusters")
-        return 0, 0
+        return 0, 0, 0
 
     # Phases 3+4: match existing stories, filter dedup, build prompt input
     prompt_input: list[dict] = []
@@ -127,7 +127,7 @@ def process_articles(
 
     if not prompt_input:
         log.info("nothing_new_after_dedup")
-        return 0, 0
+        return 0, 0, 0
 
     # Phase 5: batched Gemini call for events
     prompt = _build_events_prompt(prompt_input)
@@ -139,7 +139,7 @@ def process_articles(
         raise
     except Exception as e:
         log.error("events_call_failed", error=str(e))
-        return 0, 0
+        return 0, 0, 0
 
     # Phases 6+7: persist + intra-run dedup
     total_events = 0
@@ -211,10 +211,12 @@ def process_articles(
                 persisted_new.append((story_id, db_title))
 
     if not dry_run:
-        for story_id, title, slug, headline in stories_updated:
-            push.notify_story_update(settings, story_id, title, slug, headline)
+        # One generic push per run when NEW stories were created. Updates
+        # to existing stories are silent so subscribers don't get pinged 6x
+        # a day for the same hot story.
+        push.notify_run_summary(settings, new_story_count=len(persisted_new))
 
-    return len(stories_updated), total_events
+    return len(stories_updated), total_events, len(persisted_new)
 
 
 def run(dry_run: bool = False) -> int:
@@ -229,7 +231,7 @@ def run(dry_run: bool = False) -> int:
     gemini = GeminiClient(settings)
 
     try:
-        stories_updated, events_inserted = process_articles(
+        stories_updated, events_inserted, new_stories = process_articles(
             articles, settings, gemini, dry_run=dry_run
         )
     except CircuitBreakerOpen:
@@ -249,6 +251,7 @@ def run(dry_run: bool = False) -> int:
         "run_complete",
         stories_updated=stories_updated,
         events_inserted=events_inserted,
+        new_stories=new_stories,
     )
     return 0
 

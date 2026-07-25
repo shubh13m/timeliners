@@ -11,15 +11,18 @@ function SearchInner() {
   const q = sp.get("q") || "";
   const [results, setResults] = useState<Story[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!q) return;
     setLoading(true);
+    setError(null);
     const sb = supabaseBrowser();
     sb.rpc("search_stories", { q, lim: 30 })
       .then(async ({ data, error }) => {
         if (error) {
           console.error(error);
+          setError("Search failed. Please try again in a moment.");
           setResults([]);
           setLoading(false);
           return;
@@ -70,7 +73,15 @@ function SearchInner() {
         Search results {q && <span className="text-gray-400">· “{q}”</span>}
       </h1>
       {loading && <p className="text-gray-400">Searching…</p>}
-      {!loading && q && results.length === 0 && (
+      {error && !loading && (
+        <div
+          role="alert"
+          className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+        >
+          {error}
+        </div>
+      )}
+      {!loading && !error && q && results.length === 0 && (
         <p className="text-gray-400">No stories matched.</p>
       )}
       {!loading && !q && (

@@ -8,7 +8,14 @@ const SITE_URL =
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const sb = supabaseBuild();
-  const { data } = await sb.from("stories").select("slug,last_updated").limit(10000);
+  // Only surface active stories in the sitemap — archived stories still
+  // exist for the /archive page but shouldn't consume Google's crawl budget
+  // or serve as landing pages for search traffic.
+  const { data } = await sb
+    .from("stories")
+    .select("slug,last_updated")
+    .eq("is_active", true)
+    .limit(10000);
   const stories = (data as { slug: string; last_updated: string }[]) || [];
 
   const base: MetadataRoute.Sitemap = [

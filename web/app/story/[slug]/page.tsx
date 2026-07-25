@@ -87,12 +87,22 @@ export default async function StoryPage({ params }: { params: Promise<Params> })
       </Link>
       <div className="mb-4 flex items-center gap-2 text-xs text-gray-400">
         <span className="rounded bg-white/5 px-2 py-0.5">{story.category}</span>
-        <span>{events.length} events</span>
+        {events.length > 0 && (
+          <span>
+            {events.length} event{events.length === 1 ? "" : "s"}
+          </span>
+        )}
       </div>
       <h1 className="mb-6 text-2xl font-bold text-white sm:text-3xl">
         {story.title}
       </h1>
-      <TimelinePanel events={events} />
+      {events.length === 0 ? (
+        <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-8 text-center text-sm text-gray-400">
+          Timeline is being built. Check back after the next ingest run.
+        </div>
+      ) : (
+        <TimelinePanel events={events} />
+      )}
     </div>
   );
 }
